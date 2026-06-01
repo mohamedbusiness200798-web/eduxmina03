@@ -1,6 +1,54 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 // Default Data
 const defaultContent = {
@@ -77,10 +125,12 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         setContent(prev => ({ ...prev, ...docSnap.data() }));
       } else {
         // Init with default content
-        setDoc(doc(db, 'content', 'singleton'), defaultContent).catch(console.error);
+        setDoc(doc(db, 'content', 'singleton'), defaultContent).catch((err) => {
+          handleFirestoreError(err, OperationType.WRITE, 'content/singleton');
+        });
       }
     }, (err) => {
-      console.error("Content snapshot error:", err);
+      handleFirestoreError(err, OperationType.GET, 'content/singleton');
     });
 
     // Listen to Courses
@@ -94,26 +144,47 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       } else {
         // Init defaults
         defaultCourses.forEach(c => {
-          setDoc(doc(db, 'courses', c.id), c).catch(console.error);
+          setDoc(doc(db, 'courses', c.id), c).catch((err) => {
+            handleFirestoreError(err, OperationType.WRITE, `courses/${c.id}`);
+          });
         });
       }
     }, (err) => {
-      console.error("Courses snapshot error:", err);
+      handleFirestoreError(err, OperationType.LIST, 'courses');
     });
 
-    // Listen to Registrations
-    const registrationsUnsubscribe = onSnapshot(collection(db, 'registrations'), (snapshot) => {
-      const registrationsData: Registration[] = [];
-      snapshot.forEach(docSnap => registrationsData.push({ id: docSnap.id, ...docSnap.data() } as Registration));
-      setRegistrations(registrationsData.sort((a,b) => b.createdAt - a.createdAt));
-    }, (err) => {
-      console.error("Registrations snapshot error:", err);
+    // Listen to Registrations ONLY when user is authenticated!
+    let registrationsUnsubscribe = () => {};
+
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      // Unsubscribe any existing listener first
+      registrationsUnsubscribe();
+      
+      if (user) {
+        // User logged in (admin) - subscribe to registrations
+        registrationsUnsubscribe = onSnapshot(
+          collection(db, 'registrations'), 
+          (snapshot) => {
+            const registrationsData: Registration[] = [];
+            snapshot.forEach(docSnap => registrationsData.push({ id: docSnap.id, ...docSnap.data() } as Registration));
+            setRegistrations(registrationsData.sort((a,b) => b.createdAt - a.createdAt));
+          }, 
+          (err) => {
+            handleFirestoreError(err, OperationType.LIST, 'registrations');
+          }
+        );
+      } else {
+        // User logged out - clear registrations state
+        setRegistrations([]);
+        registrationsUnsubscribe = () => {};
+      }
     });
 
     return () => {
       contentUnsubscribe();
       coursesUnsubscribe();
       registrationsUnsubscribe();
+      authUnsubscribe();
     }
   }, []);
 
@@ -121,7 +192,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       await updateDoc(doc(db, 'content', 'singleton'), newContent);
     } catch (e) {
-      console.error("Error updating content:", e);
+      handleFirestoreError(e, OperationType.UPDATE, 'content/singleton');
     }
   };
 
@@ -130,7 +201,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       const newId = Date.now().toString();
       await setDoc(doc(db, 'courses', newId), { ...course });
     } catch (e) {
-      console.error("Error adding course", e);
+      handleFirestoreError(e, OperationType.WRITE, `courses`);
     }
   };
 
@@ -138,7 +209,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       await updateDoc(doc(db, 'courses', id), newCourse);
     } catch (e) {
-      console.error("Error updating course", e);
+      handleFirestoreError(e, OperationType.UPDATE, `courses/${id}`);
     }
   };
 
@@ -146,7 +217,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       await deleteDoc(doc(db, 'courses', id));
     } catch (e) {
-      console.error("Error deleting course", e);
+      handleFirestoreError(e, OperationType.DELETE, `courses/${id}`);
     }
   };
 
@@ -167,8 +238,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       await Promise.race([addPromise, timeoutPromise]);
       console.log("Doc added successfully");
     } catch (e) {
-      console.error("Error adding registration", e);
-      throw e;
+      handleFirestoreError(e, OperationType.CREATE, 'registrations');
     }
   };
 
@@ -176,7 +246,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       await updateDoc(doc(db, 'registrations', id), { status });
     } catch (e) {
-      console.error("Error updating registration status", e);
+      handleFirestoreError(e, OperationType.UPDATE, `registrations/${id}`);
     }
   };
 
@@ -184,7 +254,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       await deleteDoc(doc(db, 'registrations', id));
     } catch (e) {
-      console.error("Error deleting registration", e);
+      handleFirestoreError(e, OperationType.DELETE, `registrations/${id}`);
     }
   };
 

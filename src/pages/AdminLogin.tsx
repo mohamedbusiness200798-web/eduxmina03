@@ -5,7 +5,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@missamina.dz');
+  const [email, setEmail] = useState('aminaouar6@gmail.com');
   const [password, setPassword] = useState('missaminawebsite');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

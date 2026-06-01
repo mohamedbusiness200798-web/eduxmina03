@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCMS, Registration } from '../contexts/CMSContext';
 import { auth } from '../lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, updatePassword } from 'firebase/auth';
 import { 
   Users, BookOpen, Settings, LayoutDashboard, LogOut, 
   Trash2, Edit, Check, X, FileText, Menu, PlaySquare, Plus
@@ -19,6 +19,51 @@ export default function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Password change states
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState('');
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    if (newPassword.length < 6) {
+      setPasswordError('يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
+
+    setPasswordLoading('جاري تحديث كلمة المرور...');
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await updatePassword(user, newPassword);
+        setPasswordSuccess('تم تغيير كلمة المرور بنجاح!');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setPasswordError('لم يتم العثور على مستخدم مسجل الدخول.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/requires-recent-login') {
+        setPasswordError('لتغيير كلمة المرور، يرجى تسجيل الخروج ثم تسجيل الدخول مجدداً ومحاولة التغيير فوراً لأسباب أمنية.');
+      } else {
+        setPasswordError(`خطأ أثناء التحديث: ${err.message || 'حدث خطأ غير متوقع'}`);
+      }
+    } finally {
+      setPasswordLoading('');
+    }
+  };
 
   useEffect(() => {
     // Firebase auth check
@@ -402,9 +447,89 @@ export default function AdminDashboard() {
 
           {activeTab === 'settings' && (
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-slate-900">Admin Settings</h2>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-12 text-center text-slate-500">
-                  Settings and Profile management would be implemented here.
+                <h2 className="text-2xl font-bold text-slate-900 flex justify-between items-center">
+                  <span>إعدادات لوحة التحكم</span>
+                  <span className="text-sm font-normal text-slate-500">Admin Settings</span>
+                </h2>
+                
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 max-w-xl">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex justify-between items-center">
+                    <span>تغيير كلمة المرور (Change Password)</span>
+                    <Settings className="text-slate-400" size={20} />
+                  </h3>
+                  
+                  <form onSubmit={handleChangePassword} className="space-y-5">
+                    {passwordError && (
+                      <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl border border-red-100 text-right font-medium flex items-center justify-between gap-3">
+                        <span className="text-left font-mono">⚠️</span>
+                        <span>{passwordError}</span>
+                      </div>
+                    )}
+                    
+                    {passwordSuccess && (
+                      <div className="bg-emerald-50 text-emerald-600 text-sm p-4 rounded-xl border border-emerald-100 text-right font-medium flex items-center justify-between gap-3">
+                        <span className="text-left">✓</span>
+                        <span>{passwordSuccess}</span>
+                      </div>
+                    )}
+
+                    <div className="text-right">
+                      <label className="block text-sm font-medium text-slate-600 mb-2">
+                        البريد الإلكتروني الحالي للمسؤول (Admin Email)
+                      </label>
+                      <input 
+                        type="text" 
+                        disabled
+                        value={auth.currentUser?.email || 'aminaouar6@gmail.com'}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 text-left font-mono text-sm font-medium"
+                      />
+                    </div>
+
+                    <div className="text-right">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        كلمة المرور الجديدة (New Password)
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="أدخل كلمة مرور جديدة جديدة (6 أحرف على الأقل)"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-slate-900 text-left font-medium"
+                      />
+                    </div>
+
+                    <div className="text-right">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        تأكيد كلمة المرور الجديدة (Confirm New Password)
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="أعد كتابة كلمة المرور لتأكيدها"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-slate-900 text-left font-medium"
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={!!passwordLoading}
+                        className="w-full bg-brand-text text-white py-3.5 px-4 rounded-xl font-semibold shadow-sm hover:bg-slate-800 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
+                      >
+                        {passwordLoading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>{passwordLoading}</span>
+                          </>
+                        ) : (
+                          <span>حفظ كلمة المرور الجديدة</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
              </div>
           )}
