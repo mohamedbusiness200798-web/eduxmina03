@@ -10,6 +10,7 @@ import AdminLogin from './pages/AdminLogin';
 import { CMSProvider } from './contexts/CMSContext';
 
 export default function App() {
+  // Main application component
   return (
     <CMSProvider>
       <Router>
