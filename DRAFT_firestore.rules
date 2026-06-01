@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      // In this system, Miss Amina is the admin. Her email can be seeded.
+      return isSignedIn() && checkAdminStatus();
+    }
+    
+    // For this prototype, we'll assume any authenticated user is an admin.
+    function checkAdminStatus() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    match /content/singleton {
+      // Allow read for everyone to see the website content.
+      allow get: if true;
+      allow list: if false; 
+      allow write: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(courseId);
+    }
+
+    match /registrations/{registrationId} {
+      // Allow any user (even unauthenticated) to submit a registration
+      allow create: if isValidId(registrationId) && incoming().keys().hasAll([
+        'fullName', 'age', 'phone', 'email', 'englishLevel', 'courseSelection', 'status', 'createdAt'
+      ]);
+      // Only admin can read and update
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

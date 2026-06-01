@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "WebsiteContent": {
+      "title": "Website Content",
+      "description": "Singleton document containing all editable website content for the CMS.",
+      "type": "object",
+      "properties": {
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "aboutText": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "footerQuote": { "type": "string" },
+        "contactLocation": { "type": "string" },
+        "contactInstagram": { "type": "string" }
+      },
+      "required": ["heroTitle", "heroSubtitle", "aboutText"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "A course offered by Miss Amina.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "order": { "type": "number" }
+      },
+      "required": ["title", "description", "features"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "A student registration submission.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "age": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "englishLevel": { "type": "string" },
+        "courseSelection": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["fullName", "age", "phone", "email", "englishLevel", "courseSelection", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "content/singleton": {
+      "schema": { "$ref": "#/entities/WebsiteContent" },
+      "description": "The editable content for the website landing page."
+    },
+    "courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "List of courses available."
+    },
+    "registrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Registrations submitted by students."
+    }
+  }
+}
