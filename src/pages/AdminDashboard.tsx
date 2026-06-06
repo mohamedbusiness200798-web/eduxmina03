@@ -710,18 +710,6 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Direct Url Field */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-600 mb-1">أو كتابة رابط صورة مباشر (Or Direct URL)</label>
-                          <input 
-                            type="text" 
-                            value={content.aboutImage || ''}
-                            onChange={(e) => updateContent({ aboutImage: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary font-mono text-xs text-slate-800"
-                            placeholder="https://example.com/image.jpg"
-                          />
-                          <p className="text-[11px] text-slate-400 mt-0.5">يمكنك أيضاً وضع أي رابط خارجي مباشرة وسيتم عرضه في الصفحة الرئيسية.</p>
-                        </div>
                       </div>
                       <div className="hidden">
                      <input 
