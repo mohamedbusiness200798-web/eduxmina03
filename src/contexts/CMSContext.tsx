@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { auth, db } from '../lib/firebase';
 import { collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import defaultTeacherImage from '../assets/images/teacher_amina_real_1780714637543.png';
+import amina1 from '../assets/images/teacher_amina_1780714114607.png';
+import aminaPfc from '../assets/images/teacher_amina_pfc_1780714918614.png';
+import aminaProfessional from '../assets/images/teacher_amina_professional_1780716672183.png';
+import aminaVector from '../assets/images/teacher_amina_vector_illustration_1780716690942.png';
+import aminaBrownHijab from '../assets/images/teacher_amina_real_brown_hijab_1780717175166.png';
 
 enum OperationType {
   CREATE = 'create',
@@ -50,16 +56,68 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+export interface MediaImage {
+  id: string;
+  name: string;
+  url: string;
+  isDefault: boolean;
+  createdAt: number;
+}
+
 // Default Data
 const defaultContent = {
   heroTitle: "Master English With Confidence",
   heroSubtitle: "Inspiring a passion for learning that endures. Learn English step by step with Miss Amina and unlock new opportunities.",
   aboutTitle: "Meet Miss Amina",
   aboutText: "English language teacher dedicated to helping students improve their communication skills, build confidence, and achieve fluency through engaging lessons and practical learning methods.",
-  aboutImage: "https://scontent.cdninstagram.com/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?_nc_cat=105&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=whHQ45jOE2AQ7kNvwEJqpz_&_nc_oc=AdqxRBo5fzb9ryCe7dRRQMZTr7nPhv7baT4-l0skxyKa90XEgEmGc4RVihHIHBQuBoI&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_gid=vMYNzIgKDel3ZPC1gj54fg&_nc_ss=7f6a8&oh=00_Af9r6yAL2m4uOlzBMz9cK-cowDRKZtmolUfCFsueffGwFA&oe=6A22CA20",
+  aboutImage: aminaBrownHijab, // use the magnificent generated direct professional brown hijab portrait
   footerQuote: "Inspiring a passion for learning that endures.",
   instagramUrl: "https://www.instagram.com/eduxmina/",
   contactLocation: "Laghouat, Algeria",
+  mediaGallery: [
+    {
+      id: "amina-brown-hijab",
+      name: "أستاذة أمينة (واقعية - حجاب بني وسترة زيتية)",
+      url: aminaBrownHijab,
+      isDefault: true,
+      createdAt: 1780717175166
+    },
+    {
+      id: "professional-portrait",
+      name: "صورة بورتريه احترافي للأستاذة",
+      url: aminaProfessional,
+      isDefault: true,
+      createdAt: 1780716672183
+    },
+    {
+      id: "vector-illustration",
+      name: "رسمة توضيحية للموقع الإلكتروني",
+      url: aminaVector,
+      isDefault: true,
+      createdAt: 1780716690942
+    },
+    {
+      id: "default-amina-real",
+      name: "صورة افتراضية أولى (واقعية)",
+      url: defaultTeacherImage,
+      isDefault: true,
+      createdAt: 1780714637543
+    },
+    {
+      id: "default-amina-bg",
+      name: "صورة افتراضية ثانية",
+      url: amina1,
+      isDefault: true,
+      createdAt: 1780714114607
+    },
+    {
+      id: "default-amina-pfc",
+      name: "صورة افتراضية ثالثة",
+      url: aminaPfc,
+      isDefault: true,
+      createdAt: 1780714918614
+    }
+  ] as MediaImage[]
 };
 
 const defaultCourses: any[] = [
@@ -122,12 +180,32 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     // Listen to Content Singleton
     const contentUnsubscribe = onSnapshot(doc(db, 'content', 'singleton'), (docSnap) => {
       if (docSnap.exists()) {
-        setContent(prev => ({ ...prev, ...docSnap.data() }));
-      } else {
-        // Init with default content
-        setDoc(doc(db, 'content', 'singleton'), defaultContent).catch((err) => {
-          handleFirestoreError(err, OperationType.WRITE, 'content/singleton');
+        const data = docSnap.data();
+        let mergedGallery = data.mediaGallery || [];
+        const existingIds = new Set(mergedGallery.map((img: any) => img.id));
+        
+        // Ensure all default system images (including the new premium amina-brown-hijab) are present in memory in the gallery
+        defaultContent.mediaGallery.forEach((item) => {
+          if (!existingIds.has(item.id)) {
+            mergedGallery = [item, ...mergedGallery];
+          }
         });
+
+        const nextAboutImage = data.aboutImage || aminaBrownHijab;
+
+        setContent(prev => ({ 
+          ...prev, 
+          ...data,
+          aboutImage: nextAboutImage,
+          mediaGallery: mergedGallery
+        }));
+      } else {
+        // Init with default content ONLY if admin user is signed in
+        if (auth.currentUser) {
+          setDoc(doc(db, 'content', 'singleton'), defaultContent).catch((err) => {
+            handleFirestoreError(err, OperationType.WRITE, 'content/singleton');
+          });
+        }
       }
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, 'content/singleton');
@@ -142,12 +220,14 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         // Sort by ID to keep consistent order if IDs are numeric like initially
         setCourses(coursesData.sort((a,b) => String(a.id).localeCompare(String(b.id))));
       } else {
-        // Init defaults
-        defaultCourses.forEach(c => {
-          setDoc(doc(db, 'courses', c.id), c).catch((err) => {
-            handleFirestoreError(err, OperationType.WRITE, `courses/${c.id}`);
+        // Init defaults ONLY if admin user is signed in
+        if (auth.currentUser) {
+          defaultCourses.forEach(c => {
+            setDoc(doc(db, 'courses', c.id), c).catch((err) => {
+              handleFirestoreError(err, OperationType.WRITE, `courses/${c.id}`);
+            });
           });
-        });
+        }
       }
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, 'courses');

@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCMS } from '../../contexts/CMSContext';
 import { Sparkles, Star, CheckCircle, GraduationCap } from 'lucide-react';
+import defaultTeacherImage from '../..https://instagram.floo1-1.fna.fbcdn.net/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.floo1-1.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gGQCfW6blWcTw5Oa_zDmBMrBhJKHVnnaq3eabZIZjzotE5ETg46za0EvbDTTmZkgyo&_nc_ohc=li9oRlL1CywQ7kNvwE2E-M-&_nc_gid=UI_zpEoSmVhTZVNHCmE7yw&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_Af_YjAvZlbmEHu2fQjrUEF0dswXTfsKxFtEcwKI41WPc6w&oe=6A2961A0&_nc_sid=7a9f4b
 
 export default function Hero() {
   const { content } = useCMS();
+
+  const getCleanImage = (url: string | undefined): string => {
+    if (!url) return defaultTeacherImage;
+    if (url.startsWith('data:image/')) return url;
+    const lower = url.toLowerCase();
+    if (
+      lower.includes('miss-amina.jpg') ||
+      lower.includes('teacher_amina_1780714114607')
+    ) {
+      return defaultTeacherImage;
+    }
+    return url;
+  };
+
+  const [imgSrc, setImgSrc] = useState<string>(getCleanImage(content.aboutImage));
+
+  useEffect(() => {
+    setImgSrc(getCleanImage(content.aboutImage));
+  }, [content.aboutImage]);
 
   return (
     <section className="relative px-6 py-20 lg:py-32 overflow-hidden">
@@ -86,11 +106,20 @@ export default function Hero() {
              
              {/* The Image Itself */}
              <div className="w-full h-full rounded-[2rem] relative overflow-hidden z-10 shadow-inner">
-               <img src={content.aboutImage || "/miss-amina.jpg"} alt="Miss Amina" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
+               <img 
+                 src={imgSrc} 
+                 onError={() => {
+                   console.log("Image load failed, falling back to default teacher image");
+                   setImgSrc(defaultTeacherImage);
+                 }} 
+                 referrerPolicy="no-referrer" 
+                 alt="Miss Amina" 
+                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
+               />
                
                {/* Fallback */}
                <div className="absolute inset-0 bg-slate-50 flex flex-col items-center justify-center text-slate-400 -z-10">
-                  <span className="font-medium text-center px-4">Image placeholder<br/>miss-amina.jpg</span>
+                  <span className="font-medium text-center px-4">Image placeholder<br/>teacher_amina.png</span>
                </div>
              </div>
              

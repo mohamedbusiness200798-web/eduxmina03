@@ -5,7 +5,8 @@ import { auth } from '../lib/firebase';
 import { onAuthStateChanged, signOut, updatePassword } from 'firebase/auth';
 import { 
   Users, BookOpen, Settings, LayoutDashboard, LogOut, 
-  Trash2, Edit, Check, X, FileText, Menu, PlaySquare, Plus
+  Trash2, Edit, Check, X, FileText, Menu, PlaySquare, Plus,
+  Upload, RefreshCw
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -19,6 +20,95 @@ export default function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Teacher Image upload states and handler
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
+    let file: File | undefined;
+    
+    if (e.type === 'change') {
+      file = (e as React.ChangeEvent<HTMLInputElement>).target.files?.[0];
+    } else {
+      e.preventDefault();
+      file = (e as React.DragEvent<HTMLDivElement>).dataTransfer.files?.[0];
+    }
+    
+    if (!file) return;
+    setImageError('');
+    setImageUploading(true);
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('الرجاء اختيار ملف صورة صالح (PNG, JPG, JPEG)');
+      setImageUploading(false);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // High quality but low footprint resize (800px max)
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          try {
+            // Compress with high but efficient 0.85 quality
+            const base64 = canvas.toDataURL('image/jpeg', 0.85);
+            
+            // Create a media item entry
+            const newItem = {
+              id: `uploaded-${Date.now()}`,
+              name: `صورة محملة في ${new Date().toLocaleDateString('ar-DZ')}`,
+              url: base64,
+              isDefault: false,
+              createdAt: Date.now()
+            };
+
+            const updatedGallery = [newItem, ...(content.mediaGallery || [])];
+            updateContent({ 
+              aboutImage: base64,
+              mediaGallery: updatedGallery 
+            });
+          } catch (err) {
+            console.error("Canvas toDataURL failed:", err);
+            setImageError('فشل ضغط الصورة. الرجاء محاولة صورة أخرى.');
+          }
+        } else {
+          setImageError('فشل معالجة الصورة.');
+        }
+        setImageUploading(false);
+      };
+      img.onerror = () => {
+        setImageError('فشل تحميل ملف الصورة.');
+        setImageUploading(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      setImageError('فشل قراءة الملف.');
+      setImageUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Password change states
   const [newPassword, setNewPassword] = useState('');
@@ -93,19 +183,19 @@ export default function AdminDashboard() {
   }
 
   const menuItems = [
-    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'registrations', label: 'Registrations', icon: Users },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'content', label: 'Website Texts', icon: FileText },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'لوحة التحكم والإحصاءات', icon: LayoutDashboard },
+    { id: 'registrations', label: 'طلبات التسجيل الجديدة', icon: Users },
+    { id: 'courses', label: 'إدارة الدورات', icon: BookOpen },
+    { id: 'content', label: 'محتوى وصور الموقع', icon: FileText },
+    { id: 'settings', label: 'إعدادات الحساب', icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans" dir="rtl">
       
       {/* Mobile Header */}
       <div className="md:hidden bg-brand-text text-white p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="font-display font-bold text-xl">EduxMina Admin</div>
+        <div className="font-display font-bold text-xl">لوحة الإدارة - EduxMina</div>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <Menu size={24} />
         </button>
@@ -117,9 +207,9 @@ export default function AdminDashboard() {
         w-full md:w-64 bg-brand-text text-slate-300 flex-shrink-0 flex flex-col md:sticky md:h-screen md:top-0 z-40
       `}>
         <div className="p-6 hidden md:block">
-          <div className="font-display font-bold text-2xl text-white flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-primary rounded shadow flex items-center justify-center text-sm">E</div>
-            Panel
+          <div className="font-display font-bold text-2xl text-white flex items-center gap-2 justify-start">
+            <div className="w-8 h-8 bg-brand-primary rounded shadow flex items-center justify-center text-sm font-sans">E</div>
+            <span>لوحة الإدارة</span>
           </div>
         </div>
 
@@ -132,14 +222,14 @@ export default function AdminDashboard() {
                     setActiveTab(item.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                  className={`w-full flex items-center justify-start gap-3 px-4 py-3 rounded-xl transition-colors ${
                     activeTab === item.id 
                     ? 'bg-brand-primary text-white font-medium' 
                     : 'hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   <item.icon size={20} />
-                  {item.label}
+                  <span>{item.label}</span>
                 </button>
               </li>
             ))}
@@ -149,29 +239,29 @@ export default function AdminDashboard() {
         <div className="p-4 mt-auto border-t border-slate-800">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className="w-full flex items-center justify-start gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
             <LogOut size={20} />
-            Logout
+            <span>تسجيل الخروج</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto text-right">
         <div className="max-w-5xl mx-auto">
           
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-end">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">Welcome, Miss Amina</h1>
-                  <p className="text-slate-500 text-sm mt-1">Here is the summary of your website Activity today.</p>
+                  <h1 className="text-2xl font-bold text-slate-900 font-display">مرحباً بكِ، الأستاذة أمينة 👋</h1>
+                  <p className="text-slate-500 text-sm mt-1">إليكِ ملخص النشاط اليوم، ويمكنكِ تحديث صورتكِ بكل بساطة أدناه.</p>
                 </div>
-                <a href="/" target="_blank" className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 font-medium">
+                <a href="/" target="_blank" className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 font-medium">
                   <PlaySquare size={16} />
-                  View Website
+                  <span>عرض الموقع الرئيسي</span>
                 </a>
               </div>
 
@@ -179,46 +269,198 @@ export default function AdminDashboard() {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
                   <div className="flex justify-between items-center mb-4 text-brand-primary">
                     <Users size={24} />
-                    <span className="text-xs font-bold bg-brand-primary/10 px-2 py-1 rounded-md">Total</span>
+                    <span className="text-xs font-bold bg-brand-primary/10 px-2 py-1 rounded-md">الإجمالي</span>
                   </div>
                   <div className="text-3xl font-display font-bold text-slate-900 mb-1">{registrations.length}</div>
-                  <div className="text-sm text-slate-500">Student Registrations</div>
+                  <div className="text-sm text-slate-500">إجمالي طلبات التسجيل للطلاب</div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
                   <div className="flex justify-between items-center mb-4 text-blue-500">
                      <BookOpen size={24} />
-                     <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-md">Active</span>
+                     <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-md">نشطة</span>
                   </div>
                   <div className="text-3xl font-display font-bold text-slate-900 mb-1">{courses.length}</div>
-                  <div className="text-sm text-slate-500">Active Courses</div>
+                  <div className="text-sm text-slate-500">الدورات المفعلة عالموقع</div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
                   <div className="flex justify-between items-center mb-4 text-green-500">
-                    <LayoutDashboard size={24} />
-                    <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded-md">New</span>
+                    <Users size={24} />
+                    <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded-md">قيد المعالجة</span>
                   </div>
                   <div className="text-3xl font-display font-bold text-slate-900 mb-1">
                     {registrations.filter(r => r.status === 'pending').length}
                   </div>
-                  <div className="text-sm text-slate-500">Pending Approvals</div>
+                  <div className="text-sm text-slate-500">طلبات جديدة بانتظار الموافقة</div>
+                </div>
+              </div>
+
+              {/* Unified Media Library & Image Manager */}
+              <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                      <BookOpen className="text-brand-primary" size={22} />
+                      <span>مكتبة الصور والوسائط الخاصة بكِ (Media Library)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      يمكنكِ التبديل فوراً وعرض مظهر الأستاذة المفضل لديكِ. ارفعي صوراً جديدة من جهازكِ أو اختاري من رسوماتنا وبورتريهاتنا الفاخرة لتفعيلها فوراً.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid for Selector and Uploader */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left Column: Direct File Drag & Drop */}
+                  <div className="lg:col-span-1 bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                    <span className="text-xs text-slate-600 font-bold mb-1 block">رفع صورة جديدة محليًا</span>
+                    
+                    <div 
+                      onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                      onDragLeave={() => setDragActive(false)}
+                      onDrop={(e) => { e.preventDefault(); setDragActive(false); handleImageUpload(e); }}
+                      className={`relative border-2 border-dashed rounded-2xl p-6 text-center flex flex-col items-center justify-center transition-all min-h-[160px] cursor-pointer bg-white ${
+                        dragActive ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 hover:border-brand-primary/40'
+                      }`}
+                      onClick={() => document.getElementById('teacher-image-quick')?.click()}
+                    >
+                      <input 
+                        type="file" 
+                        id="teacher-image-quick"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden" 
+                      />
+                      <Upload className="text-slate-400 mb-2" size={28} />
+                      <span className="text-xs font-bold text-slate-800">اسحبي صورة هنا أو تصفحي جهازكِ</span>
+                      <span className="text-[10px] text-slate-400 mt-1">PNG, JPG, JPEG (سيتم ضغطها تلقائيًا لسرعة تحميل الموقع)</span>
+
+                      {imageUploading && (
+                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+                          <div className="w-8 h-8 border-3 border-brand-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <span className="text-xs font-semibold text-brand-primary">جاري المعالجة والرفع...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {imageError && (
+                      <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 p-2 rounded-lg border border-red-100">{imageError}</p>
+                    )}
+
+                    {/* Active Image Quick Stats */}
+                    <div className="pt-2 border-t border-slate-200/60 mt-2">
+                      <span className="text-xs text-slate-500 block">الصورة المفعّلة حالياً بالهيدر:</span>
+                      <div className="flex items-center gap-3 mt-2 bg-white p-2 rounded-xl border border-slate-200/50">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex-shrink-0">
+                          {content.aboutImage ? (
+                            <img src={content.aboutImage} alt="Active Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full bg-slate-100" />
+                          )}
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="text-xs font-bold text-slate-800 tracking-tight line-clamp-1">مفعّلة على الواجهة</p>
+                          <span className="text-[10px] text-brand-primary font-bold">✓ متصل ومباشر</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Library Items Grid */}
+                  <div className="lg:col-span-2 space-y-3">
+                    <span className="text-xs text-slate-600 font-bold block">مكتبة الصور المتوفرة لديكِ (تصحّفي واختاري للنشر فوريًا)</span>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[360px] overflow-y-auto pr-1">
+                      {(content.mediaGallery || []).map((item: any) => {
+                        const isActive = content.aboutImage === item.url;
+                        return (
+                          <div 
+                            key={item.id} 
+                            onClick={() => updateContent({ aboutImage: item.url })}
+                            className={`group relative rounded-xl border-2 overflow-hidden bg-slate-50 transition-all cursor-pointer ${
+                              isActive 
+                                ? 'border-brand-primary shadow-md ring-2 ring-brand-primary/10 bg-white' 
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-white'
+                            }`}
+                          >
+                            {/* Image aspect-square container */}
+                            <div className="aspect-[4/3] relative w-full overflow-hidden flex items-center justify-center bg-slate-100 border-b border-slate-100">
+                              <img 
+                                src={item.url} 
+                                alt={item.name} 
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                referrerPolicy="no-referrer"
+                              />
+
+                              {/* Active state overlay badge */}
+                              {isActive && (
+                                <div className="absolute top-2 right-2 bg-brand-primary text-white p-1 rounded-full shadow-md z-10">
+                                  <Check size={12} strokeWidth={3} />
+                                </div>
+                              )}
+
+                              {/* Non-default delete button */}
+                              {!item.isDefault && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updated = (content.mediaGallery || []).filter((g: any) => g.id !== item.id);
+                                    const newActive = isActive 
+                                      ? (updated[0]?.url || '') 
+                                      : content.aboutImage;
+                                    updateContent({ 
+                                      mediaGallery: updated,
+                                      aboutImage: newActive
+                                    });
+                                  }}
+                                  className="absolute top-2 left-2 bg-red-500/90 hover:bg-red-650 text-white p-1.5 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                  title="حذف الصورة من المكتبة"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Details */}
+                            <div className="p-2 text-right">
+                              <p className="text-[11px] font-bold text-slate-800 line-clamp-1" title={item.name}>
+                                {item.name}
+                              </p>
+                              <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 mt-1">
+                                <span className={`text-[9px] font-bold px-1 py-0.2 rounded ${
+                                  isActive ? 'text-brand-primary bg-brand-primary/10' : 'text-slate-500 bg-slate-100'
+                                }`}>
+                                  {isActive ? 'نشطة ومتصلة' : 'معطّلة'}
+                                </span>
+                                <span className="text-[8px] text-slate-400 font-medium">
+                                  {item.isDefault ? "نظامية" : "مرفوعة"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800">Recent Registrations</h3>
+                  <h3 className="font-bold text-slate-800">أحدث طلبات التسجيل</h3>
                 </div>
                 {registrations.length === 0 ? (
-                   <div className="p-8 text-center text-slate-500 text-sm">No registrations yet.</div>
+                   <div className="p-8 text-center text-slate-500 text-sm">لا توجد طلبات تسجيل حتى الآن.</div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                    <table className="w-full text-right text-sm whitespace-nowrap" dir="rtl">
                       <thead className="bg-slate-50 text-slate-500 font-medium">
                         <tr>
-                          <th className="px-6 py-3">Name</th>
-                          <th className="px-6 py-3">Course</th>
-                          <th className="px-6 py-3">Date</th>
-                          <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3 text-right">الاسم</th>
+                          <th className="px-6 py-3 text-right">الدورة</th>
+                          <th className="px-6 py-3 text-right">التاريخ</th>
+                          <th className="px-6 py-3 text-right">الحالة</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -233,7 +475,7 @@ export default function AdminDashboard() {
                                 reg.status === 'accepted' ? 'bg-green-100 text-green-700' :
                                 'bg-red-100 text-red-700'
                               }`}>
-                                {reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
+                                {reg.status === 'pending' ? 'انتظار' : reg.status === 'accepted' ? 'مقبول' : 'مرفوض'}
                               </span>
                             </td>
                           </tr>
@@ -396,7 +638,92 @@ export default function AdminDashboard() {
                      ></textarea>
                    </div>
                    <div>
-                     <label className="block text-sm font-medium text-slate-700 mb-1">About Image URL</label>
+                     <label className="hidden"></label>
+                      <div className="space-y-4 pt-2">
+                        <label className="block text-sm font-semibold text-slate-800">صورة الأستاذة الحالية والجديدة (Teacher Image Manager)</label>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          {/* Current Image Preview Column */}
+                          <div className="flex flex-col items-center justify-center p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                            <span className="text-xs text-slate-500 mb-2 font-medium">الصورة الحالية (Preview)</span>
+                            <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-50 flex items-center justify-center">
+                              {content.aboutImage ? (
+                                <img 
+                                  src={content.aboutImage} 
+                                  alt="Amina Preview" 
+                                  className="w-full h-full object-cover" 
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <span className="text-slate-400 text-xs text-center p-2">لا توجد صورة مخصصة</span>
+                              )}
+                            </div>
+                            {content.aboutImage && (
+                              <button
+                                type="button"
+                                onClick={() => updateContent({ aboutImage: '' })}
+                                className="mt-3 text-xs text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1.5"
+                              >
+                                <RefreshCw size={12} />
+                                <span>إعادة تعيين للافتراضية</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* File Upload Dropzone Column */}
+                          <div className="md:col-span-2">
+                            <span className="text-xs text-slate-600 font-semibold mb-1 block">تحميل ملف صورة جديد (Direct Upload File)</span>
+                            <div 
+                              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                              onDragLeave={() => setDragActive(false)}
+                              onDrop={(e) => { e.preventDefault(); setDragActive(false); handleImageUpload(e); }}
+                              className={`relative border-2 border-dashed rounded-xl p-5 text-center flex flex-col items-center justify-center transition-all ${
+                                dragActive ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white hover:border-brand-primary/60'
+                              }`}
+                            >
+                              <input 
+                                type="file" 
+                                id="teacher-image-file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden" 
+                              />
+                              <label 
+                                htmlFor="teacher-image-file" 
+                                className="cursor-pointer flex flex-col items-center justify-center space-y-1 w-full h-full"
+                              >
+                                <Upload className="text-slate-400 mb-1" size={24} />
+                                <span className="text-sm font-medium text-slate-800">اضغط هنا أو اسحب الصورة لرفعها</span>
+                                <span className="text-xs text-slate-400">تنسيقات مدعومة: JPG، PNG، JPEG (تحت 10 ميجا)</span>
+                              </label>
+
+                              {imageUploading && (
+                                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl">
+                                  <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+                                  <span className="text-xs font-semibold text-brand-primary">جاري تحميل وتحديث الصورة...</span>
+                                </div>
+                              )}
+                            </div>
+                            {imageError && (
+                              <p className="text-xs text-red-500 mt-1 font-medium">{imageError}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Direct Url Field */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 mb-1">أو كتابة رابط صورة مباشر (Or Direct URL)</label>
+                          <input 
+                            type="text" 
+                            value={content.aboutImage || ''}
+                            onChange={(e) => updateContent({ aboutImage: e.target.value })}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary font-mono text-xs text-slate-800"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                          <p className="text-[11px] text-slate-400 mt-0.5">يمكنك أيضاً وضع أي رابط خارجي مباشرة وسيتم عرضه في الصفحة الرئيسية.</p>
+                        </div>
+                      </div>
+                      <div className="hidden">
                      <input 
                        type="text" 
                        value={content.aboutImage || ''}
@@ -404,7 +731,7 @@ export default function AdminDashboard() {
                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary font-medium text-slate-900"
                        placeholder="https://example.com/image.jpg"
                      />
-                     <p className="text-xs text-slate-500 mt-1">Paste a link to an image (e.g. from Instagram). Keep empty to use default image.</p>
+                     <p className="text-xs text-slate-500 mt-1">يمكنك رفع صورة مباشرة أو إدخال عنوان الصورة المباشر في الحقل أدناه ليتم تغيير صورة الأستاذة الحالية على الموقع فوراً.</p></div>
                    </div>
                  </div>
                  
