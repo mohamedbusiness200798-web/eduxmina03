@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import AcademyBackground from '../components/layout/AcademyBackground';
+import WelcomeBanner from '../components/home/WelcomeBanner';
 import About from '../components/home/About';
 import Courses from '../components/home/Courses';
 import Features from '../components/home/Features';
@@ -17,6 +18,7 @@ export default function Home() {
       <AcademyBackground />
       <Navbar />
       <main className="flex-1 relative z-10 pt-20 lg:pt-28">
+        <WelcomeBanner />
         <About />
         <Courses />
         <Features />
