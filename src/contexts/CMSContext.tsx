@@ -8,8 +8,7 @@ import aminaPfc from '../assets/images/teacher_amina_pfc_1780714918614.png';
 import aminaProfessional from '../assets/images/teacher_amina_professional_1780716672183.png';
 import aminaVector from '../assets/images/teacher_amina_vector_illustration_1780716690942.png';
 import aminaBrownHijab from '../assets/images/teacher_amina_real_brown_hijab_1780717175166.png';
-
-const aminaInstagramPic = "https://instagram.floo1-1.fna.fbcdn.net/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.floo1-1.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gGQCfW6blWcTw5Oa_zDmBMrBhJKHVnnaq3eabZIZjzotE5ETg46za0EvbDTTmZkgyo&_nc_ohc=li9oRlL1CywQ7kNvwE2E-M-&_nc_gid=UI_zpEoSmVhTZVNHCmE7yw&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_Af_YjAvZlbmEHu2fQjrUEF0dswXTfsKxFtEcwKI41WPc6w&oe=6A2961A0&_nc_sid=7a9f4b";
+import aminaInstagramPic from '../assets/images/teacher_amina_instagram_profile.jpg';
 
 enum OperationType {
   CREATE = 'create',
@@ -200,7 +199,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        const nextAboutImage = data.aboutImage || aminaInstagramPic;
+        const dbAboutImg = data.aboutImage;
+        const nextAboutImage = (dbAboutImg && !dbAboutImg.includes('instagram.com') && !dbAboutImg.includes('fna.fbcdn.net') && !dbAboutImg.includes('scontent.cdninstagram.com') && !dbAboutImg.includes('scontent'))
+          ? dbAboutImg 
+          : aminaInstagramPic;
 
         setContent(prev => ({ 
           ...prev, 
