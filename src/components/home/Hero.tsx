@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useCMS } from '../../contexts/CMSContext';
 import { Sparkles, Star, CheckCircle, GraduationCap } from 'lucide-react';
 import localDefaultTeacherImage from '../../assets/images/teacher_amina_real_brown_hijab_1780717175166.png';
-import defaultTeacherImage from '../../assets/images/teacher_amina_instagram_profile.jpg';
+
+const defaultTeacherImage = "https://instagram.floo1-1.fna.fbcdn.net/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.floo1-1.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gEokt3Be0jLMMJRAq5md0c0vrSunOkHW0hLSTTai5o4CpDxacfC4X8nFa_yFxHdcbw&_nc_ohc=li9oRlL1CywQ7kNvwE2E-M-&_nc_gid=HcKtiU3d9-u4qA-EpYMh9w&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_Af-x7fm1_IiQaEY3Tkh7-eeq6yWJ8ZrX0mhEQ_SnzoFvZQ&oe=6A29D220&_nc_sid=7a9f4b";
 
 export default function Hero() {
   const { content } = useCMS();
@@ -15,9 +16,7 @@ export default function Hero() {
     if (
       lower.includes('miss-amina.jpg') ||
       lower.includes('teacher_amina_1780714114607') ||
-      lower.includes('instagram') ||
-      lower.includes('fbcdn') ||
-      lower.includes('scontent')
+      ((lower.includes('fbcdn') || lower.includes('instagram')) && !lower.includes('oe=6a29d220'))
     ) {
       return defaultTeacherImage;
     }

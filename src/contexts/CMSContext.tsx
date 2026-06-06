@@ -8,7 +8,8 @@ import aminaPfc from '../assets/images/teacher_amina_pfc_1780714918614.png';
 import aminaProfessional from '../assets/images/teacher_amina_professional_1780716672183.png';
 import aminaVector from '../assets/images/teacher_amina_vector_illustration_1780716690942.png';
 import aminaBrownHijab from '../assets/images/teacher_amina_real_brown_hijab_1780717175166.png';
-import aminaInstagramPic from '../assets/images/teacher_amina_instagram_profile.jpg';
+
+const aminaInstagramPic = "https://instagram.floo1-1.fna.fbcdn.net/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.floo1-1.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gEokt3Be0jLMMJRAq5md0c0vrSunOkHW0hLSTTai5o4CpDxacfC4X8nFa_yFxHdcbw&_nc_ohc=li9oRlL1CywQ7kNvwE2E-M-&_nc_gid=HcKtiU3d9-u4qA-EpYMh9w&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_Af-x7fm1_IiQaEY3Tkh7-eeq6yWJ8ZrX0mhEQ_SnzoFvZQ&oe=6A29D220&_nc_sid=7a9f4b";
 
 enum OperationType {
   CREATE = 'create',
@@ -189,8 +190,15 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     const contentUnsubscribe = onSnapshot(doc(db, 'content', 'singleton'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        let mergedGallery = data.mediaGallery || [];
-        const existingIds = new Set(mergedGallery.map((img: any) => img.id));
+        // Normalize legacy, expired Instagram URLs in mediaGallery to the fresh URL
+        let mergedGallery = (data.mediaGallery || []).map((img: any) => {
+          if (img && img.url && (img.url.includes('fbcdn.net') || img.url.includes('instagram')) && !img.url.includes('oe=6A29D220')) {
+            return { ...img, url: aminaInstagramPic };
+          }
+          return img;
+        });
+
+        const existingIds = new Set(mergedGallery.map((img: any) => img ? img.id : ''));
         
         // Ensure all default system images (including the new premium amina-brown-hijab) are present in memory in the gallery
         defaultContent.mediaGallery.forEach((item) => {
@@ -199,10 +207,17 @@ export function CMSProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        const dbAboutImg = data.aboutImage;
-        const nextAboutImage = (dbAboutImg && !dbAboutImg.includes('instagram.com') && !dbAboutImg.includes('fna.fbcdn.net') && !dbAboutImg.includes('scontent.cdninstagram.com') && !dbAboutImg.includes('scontent'))
-          ? dbAboutImg 
-          : aminaInstagramPic;
+        let nextAboutImage = data.aboutImage || aminaInstagramPic;
+        if (typeof nextAboutImage === 'string' && (nextAboutImage.includes('fbcdn.net') || nextAboutImage.includes('instagram')) && !nextAboutImage.includes('oe=6A29D220')) {
+          nextAboutImage = aminaInstagramPic;
+        }
+
+        // Proactively auto-update stale/expired URL inside the database if the administrator is online
+        if (data.aboutImage !== nextAboutImage && auth.currentUser) {
+          updateDoc(doc(db, 'content', 'singleton'), { aboutImage: nextAboutImage }).catch(err => {
+            console.warn("Auto-updating db to corrected Instagram URL failed:", err);
+          });
+        }
 
         setContent(prev => ({ 
           ...prev, 
