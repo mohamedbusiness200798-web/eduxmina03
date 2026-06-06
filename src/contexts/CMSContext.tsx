@@ -9,6 +9,8 @@ import aminaProfessional from '../assets/images/teacher_amina_professional_17807
 import aminaVector from '../assets/images/teacher_amina_vector_illustration_1780716690942.png';
 import aminaBrownHijab from '../assets/images/teacher_amina_real_brown_hijab_1780717175166.png';
 
+const aminaInstagramPic = "https://instagram.floo1-1.fna.fbcdn.net/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.floo1-1.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gGQCfW6blWcTw5Oa_zDmBMrBhJKHVnnaq3eabZIZjzotE5ETg46za0EvbDTTmZkgyo&_nc_ohc=li9oRlL1CywQ7kNvwE2E-M-&_nc_gid=UI_zpEoSmVhTZVNHCmE7yw&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_Af_YjAvZlbmEHu2fQjrUEF0dswXTfsKxFtEcwKI41WPc6w&oe=6A2961A0&_nc_sid=7a9f4b";
+
 enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -70,11 +72,18 @@ const defaultContent = {
   heroSubtitle: "Inspiring a passion for learning that endures. Learn English step by step with Miss Amina and unlock new opportunities.",
   aboutTitle: "Meet Miss Amina",
   aboutText: "English language teacher dedicated to helping students improve their communication skills, build confidence, and achieve fluency through engaging lessons and practical learning methods.",
-  aboutImage: aminaBrownHijab, // use the magnificent generated direct professional brown hijab portrait
+  aboutImage: aminaInstagramPic, // use the real Instagram profile picture as the main default header
   footerQuote: "Inspiring a passion for learning that endures.",
   instagramUrl: "https://www.instagram.com/eduxmina/",
   contactLocation: "Laghouat, Algeria",
   mediaGallery: [
+    {
+      id: "amina-instagram-pic",
+      name: "حساب الإنستغرام الحالي للأستاذة (الافتراضية الأولى)",
+      url: aminaInstagramPic,
+      isDefault: true,
+      createdAt: 1780718000000
+    },
     {
       id: "amina-brown-hijab",
       name: "أستاذة أمينة (واقعية - حجاب بني وسترة زيتية)",
@@ -191,7 +200,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        const nextAboutImage = data.aboutImage || aminaBrownHijab;
+        const nextAboutImage = data.aboutImage || aminaInstagramPic;
 
         setContent(prev => ({ 
           ...prev, 
