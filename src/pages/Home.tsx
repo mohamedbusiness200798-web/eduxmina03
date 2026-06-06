@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import AcademyBackground from '../components/layout/AcademyBackground';
-import WelcomeBanner from '../components/home/WelcomeBanner';
+import Hero from '../components/home/Hero';
 import About from '../components/home/About';
 import Courses from '../components/home/Courses';
 import Features from '../components/home/Features';
@@ -17,8 +17,8 @@ export default function Home() {
     <div className="relative text-brand-text min-h-screen flex flex-col font-sans selection:bg-brand-primary/20">
       <AcademyBackground />
       <Navbar />
-      <main className="flex-1 relative z-10 pt-20 lg:pt-28">
-        <WelcomeBanner />
+      <main className="flex-1 relative z-10 pt-20 lg:pt-24 pb-12">
+        <Hero />
         <About />
         <Courses />
         <Features />

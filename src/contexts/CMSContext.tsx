@@ -72,7 +72,7 @@ const defaultContent = {
   heroSubtitle: "Inspiring a passion for learning that endures. Learn English step by step with Miss Amina and unlock new opportunities.",
   aboutTitle: "Meet Miss Amina",
   aboutText: "English language teacher dedicated to helping students improve their communication skills, build confidence, and achieve fluency through engaging lessons and practical learning methods.",
-  aboutImage: aminaInstagramPic, // use the real Instagram profile picture as the main default header
+  aboutImage: aminaBrownHijab, // use the high-quality local brown hijab image by default
   footerQuote: "Inspiring a passion for learning that endures.",
   instagramUrl: "https://www.instagram.com/eduxmina/",
   contactLocation: "Laghouat, Algeria",
@@ -207,9 +207,9 @@ export function CMSProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        let nextAboutImage = data.aboutImage || aminaInstagramPic;
+        let nextAboutImage = data.aboutImage || aminaBrownHijab;
         if (typeof nextAboutImage === 'string' && (nextAboutImage.includes('fbcdn.net') || nextAboutImage.includes('instagram')) && !nextAboutImage.includes('oe=6A29D220')) {
-          nextAboutImage = aminaInstagramPic;
+          nextAboutImage = aminaBrownHijab;
         }
 
         // Proactively auto-update stale/expired URL inside the database if the administrator is online
