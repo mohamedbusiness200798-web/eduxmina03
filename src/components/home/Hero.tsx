@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useCMS } from '../../contexts/CMSContext';
-import { Sparkles, Star, CheckCircle, GraduationCap, Award, BookOpen, ArrowUpLeft, Users, Clock } from 'lucide-react';
+import { Sparkles, Star, CheckCircle, Award, BookOpen, ArrowUpLeft, Users, Clock } from 'lucide-react';
 
 // Use the exact local Instagram avatar and high-quality brown hijab image
 import aminaInstagramProfile from '../../assets/images/teacher_amina_instagram_profile.jpg';
@@ -110,7 +110,7 @@ export default function Hero() {
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
             >
               <a 
-                href="#registration" 
+                href="#register" 
                 className="w-full sm:w-auto px-8 py-4 bg-brand-primary text-white font-bold rounded-2xl shadow-lg shadow-brand-primary/20 hover:bg-opacity-90 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2 group"
               >
                 <span>سجّل معنا الآن مجاناً</span>
@@ -178,7 +178,7 @@ export default function Hero() {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-12 -left-8 bg-white/95 backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 z-20"
+                className="absolute top-12 -left-2 sm:-left-8 bg-white/95 backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 z-20"
                 dir="rtl"
               >
                 <div className="w-9 h-9 bg-green-50 text-green-600 rounded-xl flex items-center justify-center shadow-inner">
@@ -194,7 +194,7 @@ export default function Hero() {
               <motion.div 
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-16 -right-6 bg-white/95 backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 z-20"
+                className="absolute bottom-16 -right-2 sm:-right-6 bg-white/95 backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 z-20"
                 dir="rtl"
               >
                 <div className="w-9 h-9 bg-brand-secondary text-brand-primary rounded-xl flex items-center justify-center shadow-inner">
