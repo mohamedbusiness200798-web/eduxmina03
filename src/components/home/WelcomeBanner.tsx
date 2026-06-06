@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Sparkles, CheckCircle, GraduationCap, ArrowLeft, BookOpen, Layers, Award } from 'lucide-react';
 import { useCMS } from '../../contexts/CMSContext';
 
-// Use the official Instagram profile image provided by the user
-const aminaInstagramImageUrl = "https://scontent.cdninstagram.com/v/t51.82787-19/705749231_17951208918170885_2262895318284253937_n.jpg?_nc_cat=105&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=PmM_qnXZp_MQ7kNvwFExOiE&_nc_oc=AdrQ6B5ZolSZiN4f_I03-IoZh_o6n0i-9QM578p7xNmFf3wFOLBF1XyxeEnwXdkJsJ4&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_gid=dajdDUXxX0d6b7eQ8MLKFA&_nc_ss=7f6a8&oh=00_Af8eq9ZvwLKNl4cbzjyy3aLJxp0ZE__wmX0bB3v6lhSfGQ&oe=6A2961A0";
+// Import the exact Instagram profile picture requested by the user, saved locally to guarantee it NEVER expires or breaks in production
+import aminaInstagramProfile from '../../assets/images/teacher_amina_instagram_profile.jpg';
 
 export default function WelcomeBanner() {
   const { content } = useCMS();
@@ -40,7 +40,7 @@ export default function WelcomeBanner() {
                 {/* White border card */}
                 <div className="relative bg-white p-2 rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
                   <img 
-                    src={aminaInstagramImageUrl} 
+                    src={aminaInstagramProfile} 
                     alt="Miss Amina" 
                     referrerPolicy="no-referrer"
                     className="w-64 h-64 md:w-72 md:h-72 object-cover rounded-xl transform hover:scale-[1.02] transition-transform duration-500 ease-out" 
